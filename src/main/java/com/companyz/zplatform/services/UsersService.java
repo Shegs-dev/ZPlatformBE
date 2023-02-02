@@ -5,6 +5,7 @@ import com.companyz.zplatform.dtos.SignUpDTO;
 import com.companyz.zplatform.dtos.VerificationDTO;
 import com.companyz.zplatform.entities.Users;
 import com.companyz.zplatform.enums.VerificationStatus;
+import com.companyz.zplatform.exceptions.GeneralFailureException;
 import com.companyz.zplatform.exceptions.InvalidInputException;
 import com.companyz.zplatform.exceptions.RecordExistException;
 import com.companyz.zplatform.exceptions.RecordNotFoundException;
@@ -21,9 +22,9 @@ import java.security.spec.InvalidKeySpecException;
 public interface UsersService {
 
     //Service Methods
-    Users register(SignUpDTO newUser) throws InvalidInputException, RecordExistException, NoSuchAlgorithmException, InvalidKeySpecException;
-    Users uploadVerificationDocuments(VerificationDTO verificationDTO) throws InvalidInputException, RecordNotFoundException;
-    Users verify(String userId, VerificationStatus status) throws InvalidInputException, RecordNotFoundException;
+    Users register(SignUpDTO newUser) throws InvalidInputException, RecordExistException, GeneralFailureException, NoSuchAlgorithmException, InvalidKeySpecException;
+    Users uploadVerificationDocuments(VerificationDTO verificationDTO) throws InvalidInputException, RecordNotFoundException, GeneralFailureException;
+    Users verify(String userId, VerificationStatus status) throws GeneralFailureException, InvalidInputException, RecordNotFoundException;
     ResponseDTO checkVerification(String userId) throws RecordNotFoundException, UnverifiedException;
     Users get(String userId) throws RecordNotFoundException;
 }

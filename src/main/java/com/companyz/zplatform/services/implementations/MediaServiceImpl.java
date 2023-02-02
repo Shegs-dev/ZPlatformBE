@@ -3,9 +3,12 @@ package com.companyz.zplatform.services.implementations;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.companyz.zplatform.dtos.ResponseDTO;
 import com.companyz.zplatform.dtos.UploadMediaDTO;
 import com.companyz.zplatform.entities.Media;
 import com.companyz.zplatform.environment.APIs;
+import com.companyz.zplatform.environment.Constants;
+import com.companyz.zplatform.exceptions.GeneralFailureException;
 import com.companyz.zplatform.exceptions.InvalidInputException;
 import com.companyz.zplatform.exceptions.RecordExistException;
 import com.companyz.zplatform.exceptions.RecordNotFoundException;
@@ -41,7 +44,7 @@ public class MediaServiceImpl implements MediaService {
     FileConverter fileConverter;
 
     @Override
-    public Media save(UploadMediaDTO mediaDTO) throws InvalidInputException, RecordExistException, IOException {
+    public ResponseDTO save(UploadMediaDTO mediaDTO) throws InvalidInputException, GeneralFailureException, RecordExistException {
         log.info("Uploading Media Document");
 
         //Validation
@@ -58,24 +61,29 @@ public class MediaServiceImpl implements MediaService {
             else throw new InvalidInputException("File Is Missing");
         }
 
-        String displayName = file.getName();
-        final String fileName = file.getName();
-        log.info("Uploading file with name {}", fileName);
-        final PutObjectRequest putObjectRequest = new PutObjectRequest(apis.getS3BucketName(), fileName, file);
-        amazonS3.putObject(putObjectRequest);
-        Files.delete(file.toPath()); // Remove the file locally created in the project folder
+        try{
+            String displayName = file.getName();
+            final String fileName = file.getName();
+            log.info("Uploading file with name {}", fileName);
+            final PutObjectRequest putObjectRequest = new PutObjectRequest(apis.getS3BucketName(), fileName, file);
+            amazonS3.putObject(putObjectRequest);
+            Files.delete(file.toPath()); // Remove the file locally created in the project folder
 
-        //Saving to database
-        Media newMedia = new Media();
-        newMedia.setDeleteFlag(0);
-        newMedia.setCreatedTime(Instant.now());
-        newMedia.setDisplayName(displayName);
-        newMedia.setKey(mediaDTO.getKey());
-        newMedia.setName(fileName);
-        newMedia.setType(mediaDTO.getType());
-        mediaRepository.save(newMedia);
+            //Saving to database
+            Media newMedia = new Media();
+            newMedia.setDeleteFlag(0);
+            newMedia.setCreatedTime(Instant.now());
+            newMedia.setDisplayName(displayName);
+            newMedia.setKey(mediaDTO.getKey());
+            newMedia.setName(fileName);
+            newMedia.setType(mediaDTO.getType());
+            mediaRepository.save(newMedia);
 
-        return mediaRepository.findByKeyAndDeleteFlag(mediaDTO.getKey(), 0);
+            return new ResponseDTO(Constants.SUCCESS, "Uploaded Media Successfully", mediaRepository.findByKeyAndDeleteFlag(mediaDTO.getKey(), 0));
+        } catch (Exception e){
+            log.error("Error While Uploading Media {0}" , e);
+            throw new GeneralFailureException("Uploading Media Failed");
+        }
     }
 
     @Override
@@ -123,14 +131,21 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public void delete(String key) throws RecordNotFoundException {
+    public ResponseDTO delete(String key) throws GeneralFailureException, RecordNotFoundException {
         log.info("Deleting Media By Key");
 
         Media media = mediaRepository.findByKeyAndDeleteFlag(key, 0);
         if (media == null) throw new RecordNotFoundException("Record Not Found");
 
-        amazonS3.deleteObject(apis.getS3BucketName(), media.getName());
-        media.setDeleteFlag(1);
-        mediaRepository.save(media);
+        try{
+            amazonS3.deleteObject(apis.getS3BucketName(), media.getName());
+            media.setDeleteFlag(1);
+            mediaRepository.save(media);
+
+            return new ResponseDTO(Constants.SUCCESS, "Uploaded Media Successfully", null);
+        } catch (Exception e){
+            log.error("Error While Deleting Media By Key {0}" , e);
+            throw new GeneralFailureException("Deleting Media By Key Failed");
+        }
     }
 }

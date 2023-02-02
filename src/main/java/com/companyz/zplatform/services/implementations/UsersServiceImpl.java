@@ -6,6 +6,8 @@ import com.companyz.zplatform.dtos.VerificationDTO;
 import com.companyz.zplatform.entities.Login;
 import com.companyz.zplatform.entities.Users;
 import com.companyz.zplatform.enums.VerificationStatus;
+import com.companyz.zplatform.environment.Constants;
+import com.companyz.zplatform.exceptions.GeneralFailureException;
 import com.companyz.zplatform.exceptions.InvalidInputException;
 import com.companyz.zplatform.exceptions.RecordExistException;
 import com.companyz.zplatform.exceptions.RecordNotFoundException;
@@ -44,7 +46,8 @@ public class UsersServiceImpl implements UsersService {
     SignUpToUserTranslator signUpToUserTranslator;
 
     @Override
-    public Users register(SignUpDTO newUser) throws InvalidInputException, RecordExistException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public Users register(SignUpDTO newUser) throws InvalidInputException, RecordExistException, GeneralFailureException,
+            NoSuchAlgorithmException, InvalidKeySpecException {
         log.info("Register New User");
 
         if (newUser.getEmail() == null || newUser.getEmail().isBlank() || newUser.getFirstName() == null || newUser.getFirstName().isBlank() || newUser.getLastName() == null ||
@@ -63,18 +66,22 @@ public class UsersServiceImpl implements UsersService {
 
         log.info("Converting User From DTO");
         Users user = signUpToUserTranslator.convertSignUpDTOToUser(newUser);
-        Users dbUser = usersRepository.save(user);
 
         Login login = new Login();
         login.setUsername(user.getEmail());
         login.setPassword(newUser.getPassword());
         loginService.create(login);
 
-        return dbUser;
+        try {
+            return usersRepository.save(user);
+        } catch (Exception e) {
+            log.error("Error While Registering User {0}" , e);
+            throw new GeneralFailureException("Registering User Failed");
+        }
     }
 
     @Override
-    public Users uploadVerificationDocuments(VerificationDTO verificationDTO) throws InvalidInputException, RecordNotFoundException {
+    public Users uploadVerificationDocuments(VerificationDTO verificationDTO) throws InvalidInputException, RecordNotFoundException, GeneralFailureException {
         log.info("Uploading Verification Documents");
 
         if (verificationDTO.getUserId() == null || verificationDTO.getUserId().isBlank()) throw new InvalidInputException("Please fill all required fields");
@@ -89,12 +96,17 @@ public class UsersServiceImpl implements UsersService {
         identification.setNumber(verificationDTO.getNumber());
         user.get().setIdentificationDetails(identification);
 
-        return usersRepository.save(user.get());
+        try {
+            return usersRepository.save(user.get());
+        } catch (Exception e) {
+            log.error("Error While Uploading Verification Documents {0}" , e);
+            throw new GeneralFailureException("Uploading Verification Documents Failed");
+        }
     }
 
     @Override
-    public Users verify(String userId, VerificationStatus status) throws InvalidInputException, RecordNotFoundException {
-        log.info("Verify User");
+    public Users verify(String userId, VerificationStatus status) throws GeneralFailureException, InvalidInputException, RecordNotFoundException {
+        log.info("Verifying User");
 
         if (userId == null || userId.isBlank()) throw new InvalidInputException("Please fill all required fields");
 
@@ -103,7 +115,12 @@ public class UsersServiceImpl implements UsersService {
 
         user.get().setVerificationStatus(status);
 
-        return usersRepository.save(user.get());
+        try {
+            return usersRepository.save(user.get());
+        } catch (Exception e) {
+            log.error("Error While Verifying User {0}" , e);
+            throw new GeneralFailureException("Verifying User Failed");
+        }
     }
 
     @Override
@@ -114,9 +131,7 @@ public class UsersServiceImpl implements UsersService {
         if (user.isEmpty()) throw new RecordNotFoundException("User Does Not Exist");
         if (user.get().getVerificationStatus() != VerificationStatus.VERIFIED) throw new UnverifiedException("Not Yet Verified");
 
-        ResponseDTO response = new ResponseDTO();
-        response.setMessage(user.get().getId());
-        return response;
+        return new ResponseDTO(Constants.SUCCESS, "User Verified Successfully", user.get().getId());
     }
 
     @Override

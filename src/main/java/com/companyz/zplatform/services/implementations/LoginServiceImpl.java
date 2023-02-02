@@ -4,6 +4,7 @@ import com.companyz.zplatform.dtos.*;
 import com.companyz.zplatform.entities.Login;
 import com.companyz.zplatform.entities.Users;
 import com.companyz.zplatform.environment.APIs;
+import com.companyz.zplatform.environment.Constants;
 import com.companyz.zplatform.exceptions.*;
 import com.companyz.zplatform.repositories.LoginRepository;
 import com.companyz.zplatform.repositories.UsersRepository;
@@ -53,7 +54,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public ResponseDTO login(LoginDTO loginDTO) throws InvalidInputException, RecordNotFoundException,
-            NoSuchAlgorithmException, InvalidKeySpecException, CredentialsIncorrectException, MailjetException {
+            NoSuchAlgorithmException, InvalidKeySpecException, CredentialsIncorrectException, GeneralFailureException {
         log.info("Logging In User");
 
         if (loginDTO.getUsername() == null || loginDTO.getUsername().isBlank() || loginDTO.getPassword() == null || loginDTO.getPassword().isBlank())
@@ -70,28 +71,32 @@ public class LoginServiceImpl implements LoginService {
         String token = tokenGenerator.generate();
         login.setToken(token);
         login.setTokenExpires(this.getTokenExpireTime());
-        loginRepository.save(login);
 
-        //Sending Email
-        MessageDTO messageDTO = new MessageDTO();
-        messageDTO.setFname(user.getFirstName());
-        messageDTO.setDummyPassword(token);
-        MailDTO mailDTO = new MailDTO();
-        mailDTO.setMsg(template.getTemplate(3, messageDTO));
-        mailDTO.setSubject("ZPlatform - Two Factor Authentication");
-        mailDTO.setTo(login.getUsername());
-        mailDTO.setFrom(apis.getNoReply());
-        mailDTO.setReceiverName(user.getFirstName());
+        try {
+            loginRepository.save(login);
 
-        emailSenderService.sendSimpleEmail(mailDTO);
+            //Sending Email
+            MessageDTO messageDTO = new MessageDTO();
+            messageDTO.setFname(user.getFirstName());
+            messageDTO.setDummyPassword(token);
+            MailDTO mailDTO = new MailDTO();
+            mailDTO.setMsg(template.getTemplate(3, messageDTO));
+            mailDTO.setSubject("ZPlatform - Two Factor Authentication");
+            mailDTO.setTo(login.getUsername());
+            mailDTO.setFrom(apis.getNoReply());
+            mailDTO.setReceiverName(user.getFirstName());
 
-        ResponseDTO response = new ResponseDTO();
-        response.setMessage(user.getId());
-        return response;
+            emailSenderService.sendSimpleEmail(mailDTO);
+
+            return new ResponseDTO(Constants.SUCCESS, "Logged In User Successfully", user.getId());
+        } catch (Exception e) {
+            log.error("Error While Logging In User {0}" , e);
+            throw new GeneralFailureException("Logging In User Failed");
+        }
     }
 
     @Override
-    public Login create(Login login) throws InvalidInputException, RecordExistException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public Login create(Login login) throws InvalidInputException, RecordExistException, NoSuchAlgorithmException, InvalidKeySpecException, GeneralFailureException {
         log.info("Creating Login");
 
         if (login.getPassword() == null || login.getPassword().isBlank() || login.getUsername() == null || login.getUsername().isBlank())
@@ -104,7 +109,12 @@ public class LoginServiceImpl implements LoginService {
         login.setDeleteFlag(0);
         login.setPassword(hashPassword.hashPass(login.getPassword()));
 
-        return loginRepository.save(login);
+        try {
+            return loginRepository.save(login);
+        } catch (Exception e) {
+            log.error("Error While Creating Login {0}" , e);
+            throw new GeneralFailureException("Creating Login Failed");
+        }
     }
 
     @Override
@@ -127,7 +137,8 @@ public class LoginServiceImpl implements LoginService {
     }
 
     @Override
-    public ResponseDTO initiateResetPassword(ResetPasswordDTO resetPasswordDTO) throws InvalidInputException, RecordNotFoundException, DuplicateRequestException, MailjetException {
+    public ResponseDTO initiateResetPassword(ResetPasswordDTO resetPasswordDTO) throws InvalidInputException, RecordNotFoundException,
+            DuplicateRequestException, GeneralFailureException {
         log.info("Initiating Reset Password");
 
         if (resetPasswordDTO.getEmail() == null || resetPasswordDTO.getEmail().isBlank()) throw new InvalidInputException("Please enter required field");
@@ -142,29 +153,34 @@ public class LoginServiceImpl implements LoginService {
         if (login.getOldPasswords() != null) oldPasswords = login.getOldPasswords();
         oldPasswords.add(login.getPassword());
         login.setOldPasswords(oldPasswords);
-        loginRepository.save(login);
 
-        log.info("Sending Reset Password Email");
-        Users user = usersRepository.findByEmailIgnoreCaseAndDeleteFlag(login.getUsername(), 0);
-        MessageDTO messageDTO = new MessageDTO();
-        messageDTO.setFname(user.getFirstName());
-        messageDTO.setUrl(apis.getZplatformUrl() + apis.getResetPasswordUrl());
-        messageDTO.setUserId(user.getId());
-        MailDTO mailDTO = new MailDTO();
-        mailDTO.setMsg(template.getTemplate(2, messageDTO));
-        mailDTO.setSubject("ZPlatform - Reset Password");
-        mailDTO.setTo(login.getUsername());
-        mailDTO.setFrom(apis.getNoReply());
-        mailDTO.setReceiverName(user.getFirstName());
-        emailSenderService.sendSimpleEmail(mailDTO);
+        try {
+            loginRepository.save(login);
 
-        ResponseDTO response = new ResponseDTO();
-        response.setMessage(user.getId());
-        return response;
+            log.info("Sending Reset Password Email");
+            Users user = usersRepository.findByEmailIgnoreCaseAndDeleteFlag(login.getUsername(), 0);
+            MessageDTO messageDTO = new MessageDTO();
+            messageDTO.setFname(user.getFirstName());
+            messageDTO.setUrl(apis.getZplatformUrl() + apis.getResetPasswordUrl());
+            messageDTO.setUserId(user.getId());
+            MailDTO mailDTO = new MailDTO();
+            mailDTO.setMsg(template.getTemplate(2, messageDTO));
+            mailDTO.setSubject("ZPlatform - Reset Password");
+            mailDTO.setTo(login.getUsername());
+            mailDTO.setFrom(apis.getNoReply());
+            mailDTO.setReceiverName(user.getFirstName());
+            emailSenderService.sendSimpleEmail(mailDTO);
+
+            return new ResponseDTO(Constants.SUCCESS, "Initiated Password Reset Successfully", user.getId());
+        } catch (Exception e) {
+            log.error("Error While Initiating Password Reset {0}" , e);
+            throw new GeneralFailureException("Initiating Password Reset Failed");
+        }
     }
 
     @Override
-    public ResponseDTO completeResetPassword(LoginDTO loginDTO) throws InvalidInputException, RecordNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public ResponseDTO completeResetPassword(LoginDTO loginDTO) throws InvalidInputException, RecordNotFoundException, NoSuchAlgorithmException,
+            InvalidKeySpecException, GeneralFailureException {
         log.info("Completing Reset Password");
 
         if (loginDTO.getPassword() == null || loginDTO.getPassword().isBlank() || loginDTO.getUsername() == null || loginDTO.getPassword().isBlank())
@@ -184,11 +200,15 @@ public class LoginServiceImpl implements LoginService {
 
         login.setPassword(hashPassword.hashPass(loginDTO.getPassword()));
         login.setResetActive(false);
-        loginRepository.save(login);
 
-        ResponseDTO response = new ResponseDTO();
-        response.setMessage(user.get().getId());
-        return response;
+        try {
+            loginRepository.save(login);
+
+            return new ResponseDTO(Constants.SUCCESS, "Validated Password Reset Successfully", user.get().getId());
+        } catch (Exception e) {
+            log.error("Error While Validating Password Reset {0}" , e);
+            throw new GeneralFailureException("Validating Password Reset Failed");
+        }
     }
 
     //Method to get time that token expires

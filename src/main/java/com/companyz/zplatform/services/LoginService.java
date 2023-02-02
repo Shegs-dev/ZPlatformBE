@@ -20,9 +20,13 @@ import java.security.spec.InvalidKeySpecException;
 public interface LoginService {
 
     //Service Methods
-    ResponseDTO login(LoginDTO loginDTO) throws InvalidInputException, RecordNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException, CredentialsIncorrectException, MailjetException;
-    Login create(Login login) throws InvalidInputException, RecordExistException, NoSuchAlgorithmException, InvalidKeySpecException;
-    Users authenticateLogin(AuthenticateLoginDTO authenticateLoginDTO) throws InvalidInputException, RecordNotFoundException, CredentialsIncorrectException, AccessExpiredException;
-    ResponseDTO initiateResetPassword(ResetPasswordDTO resetPasswordDTO) throws InvalidInputException, RecordNotFoundException, DuplicateRequestException, MailjetException;
-    ResponseDTO completeResetPassword(LoginDTO loginDTO) throws InvalidInputException, RecordNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException;
+    ResponseDTO login(LoginDTO loginDTO) throws InvalidInputException, RecordNotFoundException,
+            NoSuchAlgorithmException, InvalidKeySpecException, CredentialsIncorrectException, GeneralFailureException;
+    Login create(Login login) throws InvalidInputException, RecordExistException, NoSuchAlgorithmException, InvalidKeySpecException, GeneralFailureException;
+    Users authenticateLogin(AuthenticateLoginDTO authenticateLoginDTO) throws InvalidInputException, RecordNotFoundException,
+            CredentialsIncorrectException, AccessExpiredException;
+    ResponseDTO initiateResetPassword(ResetPasswordDTO resetPasswordDTO)  throws InvalidInputException, RecordNotFoundException, DuplicateRequestException,
+            GeneralFailureException;
+    ResponseDTO completeResetPassword(LoginDTO loginDTO) throws InvalidInputException, RecordNotFoundException, NoSuchAlgorithmException,
+            InvalidKeySpecException, GeneralFailureException;
 }

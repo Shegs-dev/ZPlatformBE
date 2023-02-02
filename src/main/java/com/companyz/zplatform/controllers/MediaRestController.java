@@ -2,6 +2,9 @@ package com.companyz.zplatform.controllers;
 
 import com.companyz.zplatform.dtos.DownloadMediaDTO;
 import com.companyz.zplatform.dtos.UploadMediaDTO;
+import com.companyz.zplatform.exceptions.GeneralFailureException;
+import com.companyz.zplatform.exceptions.InvalidInputException;
+import com.companyz.zplatform.exceptions.RecordExistException;
 import com.companyz.zplatform.exceptions.RecordNotFoundException;
 import com.companyz.zplatform.services.MediaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,20 +38,22 @@ public class MediaRestController {
     @RequestMapping(value = "/upload", method = RequestMethod.POST)
     @Operation(description = "This Service uploads media on ZPlatform")
     public ResponseEntity<?> add(@RequestBody UploadMediaDTO mediaDTO, @RequestParam(name = "file", required = false) MultipartFile multipartFile,
-                                 @RequestParam(name = "key", required = false) String key, @RequestParam(name = "type", required = false) String type) throws Exception {
+                                 @RequestParam(name = "key", required = false) String key, @RequestParam(name = "type", required = false) String type)
+            throws InvalidInputException, GeneralFailureException, RecordExistException {
         log.info("API Call To Upload Media");
 
         mediaDTO.setMultipartFile(multipartFile);
         if (key != null && !key.isBlank()) mediaDTO.setKey(key);
         if (type != null && !type.isBlank()) mediaDTO.setType(type);
 
-        return ResponseEntity.ok(mediaService.save(mediaDTO));
+        return new ResponseEntity<>(mediaService.save(mediaDTO), HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/uploadFile", method = RequestMethod.POST)
     @Operation(description = "This Service uploads frontend media on Eko Atlantic")
     public ResponseEntity<?> uploadFile(@RequestParam(name = "file", required = false) MultipartFile multipartFile,
-                                 @RequestParam(name = "key", required = false) String key, @RequestParam(name = "type", required = false) String type) throws Exception {
+                                        @RequestParam(name = "key", required = false) String key, @RequestParam(name = "type", required = false) String type)
+            throws InvalidInputException, GeneralFailureException, RecordExistException {
         log.info("API Call To Upload Media");
 
         UploadMediaDTO mediaDTO = new UploadMediaDTO();
@@ -56,7 +61,7 @@ public class MediaRestController {
         if (key != null && !key.isBlank()) mediaDTO.setKey(key);
         if (type != null && !type.isBlank()) mediaDTO.setType(type);
 
-        return ResponseEntity.ok(mediaService.save(mediaDTO));
+        return new ResponseEntity<>(mediaService.save(mediaDTO), HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/download", method = RequestMethod.POST)
@@ -89,7 +94,7 @@ public class MediaRestController {
     }
 
     @RequestMapping(value = "/getByKey/{key}", method = RequestMethod.GET)
-    @Operation(description = "This Service gets organization media by key")
+    @Operation(description = "This Service gets media by key")
     public ResponseEntity<?> getByKey(@PathVariable String key){
         log.info("API Call To Fetch Organization Media By Key");
 
@@ -106,10 +111,9 @@ public class MediaRestController {
 
     @RequestMapping(value = "/delete/{key}", method = RequestMethod.DELETE)
     @Operation(description = "This Service deletes a media on Eko-Atlantic")
-    public ResponseEntity<?> delete(@PathVariable String key) throws RecordNotFoundException {
+    public ResponseEntity<?> delete(@PathVariable String key) throws GeneralFailureException, RecordNotFoundException {
         log.info("API Call To Delete A Media");
 
-        mediaService.delete(key);
-        return (ResponseEntity<?>) ResponseEntity.ok();
+        return new ResponseEntity<>(mediaService.delete(key), HttpStatus.OK);
     }
 }

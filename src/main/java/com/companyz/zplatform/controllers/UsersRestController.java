@@ -3,6 +3,7 @@ package com.companyz.zplatform.controllers;
 import com.companyz.zplatform.dtos.SignUpDTO;
 import com.companyz.zplatform.dtos.VerificationDTO;
 import com.companyz.zplatform.enums.VerificationStatus;
+import com.companyz.zplatform.exceptions.GeneralFailureException;
 import com.companyz.zplatform.exceptions.InvalidInputException;
 import com.companyz.zplatform.exceptions.RecordExistException;
 import com.companyz.zplatform.exceptions.RecordNotFoundException;
@@ -36,24 +37,26 @@ public class UsersRestController {
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     @Operation(description = "This Service registers a new user on ZPlatform")
-    public ResponseEntity<?> register(@RequestBody SignUpDTO newUser) throws InvalidInputException, RecordExistException,
-            NoSuchAlgorithmException, InvalidKeySpecException {
+    public ResponseEntity<?> register(@RequestBody SignUpDTO newUser) throws InvalidInputException, GeneralFailureException,
+            RecordExistException, NoSuchAlgorithmException, InvalidKeySpecException {
         log.info("API Call To Register New User {} " , newUser);
 
-        return ResponseEntity.ok(usersService.register(newUser));
+        return new ResponseEntity<>(usersService.register(newUser), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/upload-verification-document", method = RequestMethod.POST)
     @Operation(description = "This Service uploads verification document on ZPlatform")
-    public ResponseEntity<?> uploadVerificationDocuments(@RequestBody VerificationDTO verificationDTO) throws InvalidInputException, RecordNotFoundException {
+    public ResponseEntity<?> uploadVerificationDocuments(@RequestBody VerificationDTO verificationDTO) throws InvalidInputException,
+            RecordNotFoundException, GeneralFailureException {
         log.info("API Call To Uploads Verification Document {} " , verificationDTO);
 
-        return ResponseEntity.ok(usersService.uploadVerificationDocuments(verificationDTO));
+        return new ResponseEntity<>(usersService.uploadVerificationDocuments(verificationDTO), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/verify/{userId}/{status}", method = RequestMethod.GET)
     @Operation(description = "This Service verifies user")
-    public ResponseEntity<?> verify(@PathVariable String userId, @PathVariable VerificationStatus status) throws InvalidInputException, RecordNotFoundException {
+    public ResponseEntity<?> verify(@PathVariable String userId, @PathVariable VerificationStatus status) throws InvalidInputException,
+            GeneralFailureException, RecordNotFoundException {
         log.info("API Call To Verifies User");
 
         return new ResponseEntity<>(usersService.verify(userId, status), HttpStatus.OK);

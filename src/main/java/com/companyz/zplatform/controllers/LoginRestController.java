@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,11 +34,11 @@ public class LoginRestController {
 
     @RequestMapping(method = RequestMethod.POST)
     @Operation(description = "This Service logs a user in on ZPlatform")
-    public ResponseEntity<?> login(@RequestBody LoginDTO loginDTO) throws InvalidInputException,
-            NoSuchAlgorithmException, InvalidKeySpecException, RecordNotFoundException, CredentialsIncorrectException, MailjetException {
+    public ResponseEntity<?> login(@RequestBody LoginDTO loginDTO) throws InvalidInputException, RecordNotFoundException,
+            GeneralFailureException, CredentialsIncorrectException, NoSuchAlgorithmException, InvalidKeySpecException {
         log.info("API Call To Login User");
 
-        return ResponseEntity.ok(loginService.login(loginDTO));
+        return new ResponseEntity<>(loginService.login(loginDTO), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/authenticate-login", method = RequestMethod.POST)
@@ -46,24 +47,24 @@ public class LoginRestController {
             RecordNotFoundException, CredentialsIncorrectException, AccessExpiredException {
         log.info("API Call To Authenticate User Login");
 
-        return ResponseEntity.ok(loginService.authenticateLogin(authenticateLoginDTO));
+        return new ResponseEntity<>(loginService.authenticateLogin(authenticateLoginDTO), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/initiate-reset-password", method = RequestMethod.POST)
     @Operation(description = "This Service initiates a user password reset on ZPlatform")
     public ResponseEntity<?> initiateResetPassword(@RequestBody ResetPasswordDTO resetPasswordDTO) throws InvalidInputException,
-            RecordNotFoundException, DuplicateRequestException, MailjetException {
+            RecordNotFoundException, DuplicateRequestException, GeneralFailureException {
         log.info("API Call To Initiate User Password Reset");
 
-        return ResponseEntity.ok(loginService.initiateResetPassword(resetPasswordDTO));
+        return new ResponseEntity<>(loginService.initiateResetPassword(resetPasswordDTO), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/complete-reset-password", method = RequestMethod.POST)
     @Operation(description = "This Service completes a user password reset on ZPlatform")
     public ResponseEntity<?> completeResetPassword(@RequestBody LoginDTO loginDTO) throws InvalidInputException,
-            RecordNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException {
+            RecordNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException, GeneralFailureException {
         log.info("API Call To Complete User Password Reset");
 
-        return ResponseEntity.ok(loginService.completeResetPassword(loginDTO));
+        return new ResponseEntity<>(loginService.completeResetPassword(loginDTO), HttpStatus.OK);
     }
 }

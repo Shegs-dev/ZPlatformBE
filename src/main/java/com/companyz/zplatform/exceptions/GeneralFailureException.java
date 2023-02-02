@@ -3,14 +3,16 @@ package com.companyz.zplatform.exceptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-/** Ajayi Segun on 9th December 2022 **/
+/**
+ * Ajayi Segun on 13th January 2023
+ */
 
-@ResponseStatus(value = HttpStatus.NOT_FOUND)
-public class RecordNotFoundException extends Exception {
+@ResponseStatus(value = HttpStatus.PRECONDITION_FAILED)
+public class GeneralFailureException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    public RecordNotFoundException(String message){
+    public GeneralFailureException(String message){
         super(message);
     }
 }
