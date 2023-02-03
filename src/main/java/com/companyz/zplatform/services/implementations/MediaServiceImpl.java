@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -63,7 +64,8 @@ public class MediaServiceImpl implements MediaService {
 
         try{
             String displayName = file.getName();
-            final String fileName = file.getName();
+            long suffix = new Date().getTime();
+            final String fileName = file.getName() + "" + suffix;
             log.info("Uploading file with name {}", fileName);
             final PutObjectRequest putObjectRequest = new PutObjectRequest(apis.getS3BucketName(), fileName, file);
             amazonS3.putObject(putObjectRequest);
